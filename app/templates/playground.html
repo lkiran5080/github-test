@@ -1,0 +1,295 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<style>
+    body {
+        background-color: #fff2dd;
+        background-color: #2f2f35;
+
+    }
+
+    .ace_content::-webkit-scrollbar {
+        width: 1px;
+
+        box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+
+    }
+
+    .ace_content::-webkit-scrollbar-thumb {
+        background-color: darkgrey;
+        outline: 1px solid slategrey;
+    }
+
+    .ace_scrollbar::-webkit-scrollbar {
+        width: 1px;
+    }
+
+    .code-editor {
+        font-family: 'Courier New', Courier, monospace;
+        font-size: large;
+        width: 100%;
+        height: 600px;
+        border-radius: 5px;
+        scrollbar-width: thin;
+        box-shadow:
+            0 2.8px 2.2px rgba(0, 0, 0, 0.034),
+            0 6.7px 5.3px rgba(0, 0, 0, 0.048),
+            0 12.5px 10px rgba(0, 0, 0, 0.06),
+            0 22.3px 17.9px rgba(0, 0, 0, 0.072),
+            0 41.8px 33.4px rgba(0, 0, 0, 0.086),
+            0 100px 80px rgba(0, 0, 0, 0.12)
+    }
+
+    .code-editor::-webkit-scrollbar {
+        width: 0;
+    }
+
+    .banner-container {
+        background-image: url('./compass.jpg');
+        background-repeat: no-repeat;
+        background-size: contain;
+        width: 500px;
+        height: 600px;
+    }
+
+    #results {}
+
+    .stdout-container {
+        background-color: #fff2dd;
+        background-color: #2f2f35;
+        color: white;
+        font-family: 'Courier New', Courier, monospace;
+        font-weight: 700;
+        height: 500px;
+        width: 400px;
+        box-shadow:
+            0 2.8px 2.2px rgba(0, 0, 0, 0.034),
+            0 6.7px 5.3px rgba(0, 0, 0, 0.048),
+            0 12.5px 10px rgba(0, 0, 0, 0.06),
+            0 22.3px 17.9px rgba(0, 0, 0, 0.072),
+            0 41.8px 33.4px rgba(0, 0, 0, 0.086),
+            0 100px 80px rgba(0, 0, 0, 0.12)
+    }
+
+    .stderr-container {
+        background-color: #fff2dd;
+        background-color: #2f2f35;
+        color: crimson;
+        font-family: 'Courier New', Courier, monospace;
+        font-weight: 700;
+        height: 500px;
+        width: 400px;
+        box-shadow:
+            0 2.8px 2.2px rgba(0, 0, 0, 0.034),
+            0 6.7px 5.3px rgba(0, 0, 0, 0.048),
+            0 12.5px 10px rgba(0, 0, 0, 0.06),
+            0 22.3px 17.9px rgba(0, 0, 0, 0.072),
+            0 41.8px 33.4px rgba(0, 0, 0, 0.086),
+            0 100px 80px rgba(0, 0, 0, 0.12)
+    }
+
+    .output-para {
+        word-break: break-all;
+        overflow: auto;
+    }
+</style>
+
+<!-- <input type="text" id="langBox">
+<br>
+<textarea name="" id="codeBox" cols="30" rows="10"></textarea>
+<br>
+<button id="submitBtn">Submit</button>
+
+<div id="results">
+
+</div> -->
+
+
+<div class="container" style="height: 100px;">
+
+</div>
+<div class="container">
+    <div class="row">
+        <div class="col-sm">
+            <div class="container">
+
+                <select id="langSelect" class="form-select" aria-label=".form-select-sm example" style="width: 110px;">
+                    <option selected value="cpp">C++</option>
+                    <option value="c">C</option>
+                    <option value="py">Python3</option>
+                    <option value="js">Javascript</option>
+                </select>
+
+                <button class="btn btn-light my-2" id="runBtn">Run</button>
+
+
+
+            </div>
+
+
+            <div class="code-editor m-auto" id="codeEditor">
+
+            </div>
+        </div>
+
+    </div>
+    <div class="row" id="waiting">
+        <div class="container-fluid">
+            <div class="container img-container mx-auto d-flex justify-content-center">
+                <img src="{{url_for('static', filename='Saly-38.png')}}" class="mx-auto" alt="" style="height: 600px;">
+            </div>
+        </div>
+    </div>
+    <div id="results" class="row">
+        <div class="col">
+            <div class="container" style="height: 100px;">
+
+            </div>
+            <div class="container stdout-container">
+
+                <p style="color: green;">
+                    stdout>
+                </p>
+                <p id="stdout" class="output-para">
+                </p>
+            </div>
+        </div>
+        <div class="col">
+            <div class="container stderr-container">
+                <p style="color: crimson;">
+                    stderr>
+                </p>
+                <p id="stderr" class="output-para">
+                </p>
+            </div>
+            <div class=" container" style="height: 100px;">
+
+            </div>
+        </div>
+    </div>
+
+</div>
+<div class="container" style="height: 100px;">
+
+</div>
+
+
+<script src="{{url_for('static', filename='vendor/ace-builds/src-noconflict/ace.js')}}" type="text/javascript"
+    charset="utf-8"></script>
+<script>
+    $(document).ready(function () {
+
+        var editor = ace.edit("codeEditor");
+        editor.setTheme("ace/theme/twilight");
+        editor.session.setMode("ace/mode/c_cpp");
+        editor.setValue('', -1);
+
+        let langSelector = $('#langSelect');
+
+        let langSelect = $('#langSelect :selected');
+        console.log("lang in select : ", langSelect.val());
+        let runBtn = $('#runBtn');
+
+
+        langSelector.on("change", () => {
+            let langSelect = $('#langSelect :selected');
+            console.log("lang in select : ", langSelect.val());
+            switch (langSelect.val()) {
+                case "cpp":
+                    editor.session.setMode("ace/mode/c_cpp");
+                    break;
+                case "c":
+                    editor.session.setMode("ace/mode/c_cpp");
+                    break;
+                case "py":
+                    editor.session.setMode("ace/mode/python");
+                    break;
+                case "py":
+                    editor.session.setMode("ace/mode/javascript");
+                    break;
+            }
+        })
+
+        function handleClick(lang, src) {
+            console.log('Making a POST fetch request...');
+            document.getElementById('waiting').scrollIntoView({
+                behavior: "smooth"
+            });
+            fetch("/run", {
+                    method: "POST",
+                    credentials: 'include',
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        lang: lang,
+                        src: src
+                    }),
+                })
+                .then((response) => response.json())
+                .then((data) => getStatus(data.task_id));
+        }
+
+        function getStatus(taskID) {
+            console.log('ping...Is my job done?')
+            fetch(`/status/${taskID}`, {
+                    method: "GET",
+                    credentials: 'include',
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                })
+                .then((response) => response.json())
+                .then((res) => {
+                    // do something with result
+
+                    document.getElementById('results').scrollIntoView({
+                        behavior: "smooth"
+                    });
+
+                    const taskStatus = res.task_status;
+
+                    if (taskStatus === "SUCCESS") {
+                        const taskResult = res.task_result;
+
+                        console.log('returncode : ', taskResult.returncode);
+                        console.log('stdout : ', taskResult.stdout);
+                        console.log('stderr : ', taskResult.stderr);
+
+                        let stdout = $('#stdout');
+                        let stderr = $('#stderr');
+
+                        stdout.text(taskResult.stdout);
+                        stderr.text(taskResult.stderr);
+
+                    }
+
+                    if (taskStatus === "SUCCESS" || taskStatus === "FAILURE") return false;
+
+                    setTimeout(function () {
+                        getStatus(res.task_id);
+                    }, 1000);
+
+                })
+                .catch((err) => console.log(err));
+        }
+
+        runBtn.on("click", function () {
+            console.log("Run Button was clicked");
+
+            let langSelect = $('#langSelect :selected');
+            let lang = langSelect.val();
+            let src = editor.getValue();
+
+            console.log('lang :', lang);
+            console.log('src :', src)
+
+            handleClick(lang, src);
+
+
+
+        });
+    });
+</script>
+<script src=""></script>
+{% endblock content %}
